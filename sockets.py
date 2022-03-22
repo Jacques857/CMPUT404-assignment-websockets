@@ -69,7 +69,7 @@ myWorld.add_set_listener( set_listener )
 @app.route('/')
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    return flask.Response(status=301, headers={"Location" : "http://localhost:8000/static/index.html", "Access-Control-Allow-Origin" : "*"})
 
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
@@ -81,7 +81,9 @@ def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
     # XXX: TODO IMPLEMENT ME
-    return None
+    print(ws)
+    myWorld.add_set_listener(ws)
+    return flask.Response(status=200)
 
 
 # I give this to you, this is how you get the raw body/data portion of a post in flask
@@ -96,26 +98,56 @@ def flask_post_json():
     else:
         return json.loads(request.form.keys()[0])
 
-@app.route("/entity/<entity>", methods=['POST','PUT'])
+@app.route("/entity/<entity>", methods=['POST','PUT','OPTIONS'])
 def update(entity):
-    '''update the entities via this interface'''
-    return None
+    # handle pre-flight request
+    if request.method == 'OPTIONS':
+        response = flask.Response()
+        response.access_control_allow_headers = ["content-type"]
+        response.access_control_allow_origin = "*"
+        return response
 
-@app.route("/world", methods=['POST','GET'])    
+    '''update the entities via this interface'''
+    # Get the json body
+    data = flask_post_json()
+
+    # Update the entity
+    myWorld.set(entity, data)
+
+    return flask.Response(status=200, headers={"Access-Control-Allow-Origin" : "*"}, content_type="application/json", response=json.dumps(myWorld.get(entity)))
+
+@app.route("/world", methods=['POST','GET','OPTIONS'])    
 def world():
+    # handle pre-flight request
+    if request.method == 'OPTIONS':
+        response = flask.Response()
+        response.access_control_allow_headers = ["content-type"]
+        response.access_control_allow_origin = "*"
+        return response
+
     '''you should probably return the world here'''
-    return None
+    response = flask.Response(status=200, content_type="application/json", response=json.dumps(myWorld.world()))
+    response.access_control_allow_origin = "*"
+    return response
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+    response = flask.Response(status=200, headers={"Access-Control-Allow-Origin" : "*"}, content_type="application/json", response=json.dumps(myWorld.get(entity)))
+    return response
 
-
-@app.route("/clear", methods=['POST','GET'])
+@app.route("/clear", methods=['POST','GET','OPTIONS'])
 def clear():
+    # handle pre-flight request
+    if request.method == 'OPTIONS':
+        response = flask.Response()
+        response.access_control_allow_headers = ["content-type"]
+        response.access_control_allow_origin = "*"
+        return response
+
     '''Clear the world out!'''
-    return None
+    myWorld.clear()
+    return flask.Response(status=200, headers={"Access-Control-Allow-Origin" : "*"}, content_type="application/json", response=json.dumps(myWorld.world()))
 
 
 
