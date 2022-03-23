@@ -35,6 +35,9 @@ class World:
     def add_set_listener(self, listener):
         self.listeners.append( listener )
 
+    def remove_listener(self, listener):
+        self.listeners.remove(listener)
+
     def update(self, entity, key, value):
         entry = self.space.get(entity,dict())
         entry[key] = value
@@ -48,7 +51,7 @@ class World:
     def update_listeners(self, entity):
         '''update the set listeners'''
         for listener in self.listeners:
-            listener(entity, self.get(entity))
+            listener.send(json.dumps({entity:self.get(entity)}))
 
     def clear(self):
         self.space = dict()
@@ -63,8 +66,9 @@ myWorld = World()
 
 def set_listener( entity, data ):
     ''' do something with the update ! '''
+    data = entity
 
-myWorld.add_set_listener( set_listener )
+#myWorld.add_set_listener( set_listener )
         
 @app.route('/')
 def hello():
@@ -81,10 +85,16 @@ def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
     # XXX: TODO IMPLEMENT ME
-    print(ws)
+    ws.send(json.dumps(myWorld.world()))
     myWorld.add_set_listener(ws)
-    return flask.Response(status=200)
-
+    try:
+        while True:
+            msg = ws.receive()
+            if msg != None:
+                msg = json.loads(msg)
+                myWorld.set(list(msg.keys())[0], msg[list(msg.keys())[0]])
+    except Exception as e:
+        myWorld.remove_listener(ws)
 
 # I give this to you, this is how you get the raw body/data portion of a post in flask
 # this should come with flask but whatever, it's not my project.
