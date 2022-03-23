@@ -60,3 +60,8 @@ Contributors
 * Abram Hindle
 * Cole Mackenzie
 * Jacques Leong-Sit
+
+References
+==========
+
+CMPUT 404 Assignment 4 By Jacques Leong-Sit  https://github.com/Jacques857/CMPUT404-assignment-ajax
